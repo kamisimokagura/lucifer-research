@@ -1,0 +1,40 @@
+{
+  "name": "@lucifer/mcp",
+  "version": "0.1.0",
+  "description": "lucifer-research MCP server",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "lucifer-mcp": "dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src --ext .ts",
+    "dev": "tsc --watch",
+    "prepare": "tsc"
+  },
+  "dependencies": {
+    "@lucifer/core": "*",
+    "@lucifer/extractors": "*",
+    "@modelcontextprotocol/sdk": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "vitest": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
