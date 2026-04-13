@@ -216,11 +216,19 @@ export class InstagramExtractor implements Extractor {
 
     try {
       // Tier 1: GraphQL — full data, no cookie
-      const graphqlResult = await this._tryGraphQL(url, shortcode, controller.signal);
-      if (graphqlResult) return graphqlResult;
+      let graphqlHint: string | undefined;
+      try {
+        const graphqlResult = await this._tryGraphQL(url, shortcode, controller.signal);
+        if (graphqlResult) return graphqlResult;
+      } catch (err) {
+        const msg = (err as Error)?.message ?? "";
+        if (msg.startsWith("DOC_ID_EXPIRED:")) {
+          graphqlHint = msg.replace("DOC_ID_EXPIRED:", "").trim();
+        }
+      }
 
       // Tier 2: OGP scrape — truncated caption
-      const ogpResult = await this._tryOGP(url, shortcode, controller.signal);
+      const ogpResult = await this._tryOGP(url, shortcode, controller.signal, graphqlHint);
       if (ogpResult) return ogpResult;
 
       // Tier 3: Meta oEmbed — author only, requires user token
@@ -266,9 +274,25 @@ export class InstagramExtractor implements Extractor {
         body: body.toString(),
       });
 
-      if (!res.ok) return null;
+      if (!res.ok) {
+        if (res.status === 400) {
+          // 400 is the most common signal for doc_id rotation
+          throw new Error(
+            `DOC_ID_EXPIRED: Instagram GraphQL returned HTTP 400 — doc_id may have rotated. ` +
+              `Update INSTAGRAM_DEFAULT_DOC_ID (current: ${this.docId}) or pass docId via constructor.`,
+          );
+        }
+        return null;
+      }
 
       const json = (await res.json()) as IgGraphQLResponse;
+      if (json.errors?.length) {
+        // API-level error array is the other common signal for doc_id rotation
+        throw new Error(
+          `DOC_ID_EXPIRED: Instagram GraphQL returned errors — doc_id may have rotated. ` +
+            `Update INSTAGRAM_DEFAULT_DOC_ID (current: ${this.docId}) or pass docId via constructor.`,
+        );
+      }
       const media = json.data?.xdt_shortcode_media;
       if (!media) return null;
 
@@ -319,6 +343,7 @@ export class InstagramExtractor implements Extractor {
     url: string,
     shortcode: string,
     signal: AbortSignal,
+    graphqlHint?: string,
   ): Promise<ResearchResult | null> {
     try {
       const targetUrl = `https://www.instagram.com/p/${shortcode}/`;
@@ -355,11 +380,15 @@ export class InstagramExtractor implements Extractor {
       const finalUsername = username ?? author ?? "unknown";
       const truncated = finalCaption.length > 60 ? `${finalCaption.slice(0, 60)}...` : finalCaption;
 
+      const ogpNote = graphqlHint
+        ? `*Caption may be truncated (OGP fallback). GraphQL unavailable: ${graphqlHint}*`
+        : `*Caption may be truncated (OGP fallback).*`;
+
       return {
         url,
         title: `@${finalUsername}: ${truncated}`,
         content: finalCaption
-          ? `${finalCaption}\n\n*Caption may be truncated (OGP fallback).*`
+          ? `${finalCaption}\n\n${ogpNote}`
           : `[Instagram post by @${finalUsername}]`,
         type: "social",
         platform: "instagram",

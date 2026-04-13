@@ -44,6 +44,8 @@ interface Extractor {
   extract(url: string, options?: ExtractOptions): Promise<ResearchResult>;
 }
 
+// --- API response types ---
+
 /** FxTwitter API response shape (only fields we consume) */
 interface FxTweet {
   id?: string;
@@ -61,6 +63,15 @@ interface FxResponse {
   tweet?: FxTweet;
 }
 
+/** Twitter oEmbed API response shape */
+interface XOEmbedResponse {
+  author_name?: string;
+  author_url?: string;
+  html?: string;
+}
+
+// --- Helpers ---
+
 /** Extract numeric tweet ID from twitter.com / x.com status URLs. */
 function parseTweetId(url: string): string | null {
   try {
@@ -75,11 +86,41 @@ function parseTweetId(url: string): string | null {
 }
 
 /**
- * Extract X / Twitter posts via the FxTwitter public API.
+ * Extract plain text from a Twitter oEmbed HTML blockquote.
+ * The `<p>` inside the blockquote contains the tweet text with inline links.
+ */
+function extractOEmbedText(html: string): string {
+  const pMatch = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+  if (!pMatch?.[1]) return "";
+  let text = pMatch[1];
+  // Strip HTML tags (links, etc.)
+  text = text.replace(/<[^>]+>/g, "");
+  // Decode common HTML entities
+  text = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+  return text.trim();
+}
+
+// ─────────────────────────────────────────────
+
+/**
+ * Extract X / Twitter posts using a two-tier strategy.
  *
- * FxTwitter is a free, no-auth community proxy that returns structured
- * tweet data including full text and engagement counters.
- * API: https://api.fxtwitter.com/i/status/{tweetId}
+ * **Tier 1 — FxTwitter API (primary)**
+ * `api.fxtwitter.com` is a free, no-auth community proxy returning structured
+ * tweet data: full text, engagement counters (views/likes/retweets/replies),
+ * author, and timestamp. Note: the *website* fxtwitter.com redirects to x.com,
+ * but the *API subdomain* api.fxtwitter.com remains operational.
+ *
+ * **Tier 2 — Twitter oEmbed (fallback)**
+ * `publish.twitter.com/oembed` is an official, no-auth endpoint returning the
+ * author and tweet text (embedded in HTML). No engagement data. Used when
+ * api.fxtwitter.com is unavailable.
  */
 export class XExtractor implements Extractor {
   readonly tier = "api" as const;
@@ -97,19 +138,33 @@ export class XExtractor implements Extractor {
     const timer = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const apiUrl = `https://api.fxtwitter.com/i/status/${tweetId}`;
-      const res = await fetch(apiUrl, {
-        signal: controller.signal,
+      // Tier 1: FxTwitter API — full data, no auth
+      const fxResult = await this._tryFxTwitter(tweetId, controller.signal);
+      if (fxResult) return fxResult;
+
+      // Tier 2: Twitter oEmbed — author + text only, no engagement data
+      const oembedResult = await this._tryOEmbed(url, controller.signal);
+      if (oembedResult) return oembedResult;
+
+      throw new Error(`All X extraction tiers failed for ${url} (tweet ID: ${tweetId})`);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async _tryFxTwitter(
+    tweetId: string,
+    signal: AbortSignal,
+  ): Promise<ResearchResult | null> {
+    try {
+      const res = await fetch(`https://api.fxtwitter.com/i/status/${tweetId}`, {
+        signal,
         headers: { Accept: "application/json" },
       });
-
-      if (!res.ok)
-        throw new Error(`FxTwitter API returned HTTP ${res.status} for tweet ${tweetId}`);
+      if (!res.ok) return null;
 
       const json = (await res.json()) as FxResponse;
-      if (json.code !== 200 || !json.tweet) {
-        throw new Error(`FxTwitter API error (code=${json.code ?? "?"}) for tweet ${tweetId}`);
-      }
+      if (json.code !== 200 || !json.tweet) return null;
 
       const tweet = json.tweet;
       const handle = tweet.author?.screen_name ?? "unknown";
@@ -132,7 +187,7 @@ export class XExtractor implements Extractor {
       };
 
       return {
-        url,
+        url: `https://x.com/${handle}/status/${tweetId}`,
         title: `@${handle}: ${truncated}`,
         content: text,
         type: "social",
@@ -144,8 +199,45 @@ export class XExtractor implements Extractor {
         extractor: "api",
         extractedAt: new Date().toISOString(),
       };
-    } finally {
-      clearTimeout(timer);
+    } catch {
+      return null;
+    }
+  }
+
+  private async _tryOEmbed(url: string, signal: AbortSignal): Promise<ResearchResult | null> {
+    try {
+      const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=1`;
+      const res = await fetch(oembedUrl, {
+        signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return null;
+
+      const data = (await res.json()) as XOEmbedResponse;
+      const text = data.html ? extractOEmbedText(data.html) : "";
+      const displayName = data.author_name;
+
+      let handle: string | undefined;
+      if (data.author_url) {
+        const m = data.author_url.match(/(?:twitter|x)\.com\/([^/?#]+)/);
+        handle = m?.[1];
+      }
+
+      const truncated = text.length > 60 ? `${text.slice(0, 60)}...` : text;
+
+      return {
+        url,
+        title: `@${handle ?? displayName ?? "unknown"}: ${truncated}`,
+        content: text || `[Tweet by ${displayName ?? "unknown"} — text unavailable via oEmbed]`,
+        type: "social",
+        platform: "x",
+        ...(displayName !== undefined && { author: displayName }),
+        trust: { score: 0.6, verified: false },
+        extractor: "readability",
+        extractedAt: new Date().toISOString(),
+      };
+    } catch {
+      return null;
     }
   }
 }

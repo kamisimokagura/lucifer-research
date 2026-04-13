@@ -46,8 +46,10 @@ const DOMAIN_ROUTES: Record<string, RouteInfo> = {
   // Instagram uses an unofficial GraphQL endpoint + OGP fallback (no cookie required).
   // See InstagramExtractor for doc_id rotation strategy.
   // Note: selectRoute() strips www. but not m., so mobile subdomains are listed explicitly.
+  // instagr.am is Instagram's URL shortener — same extractor handles it via canHandle().
   "instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
   "m.instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
+  "instagr.am": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
 };
 
 /** Domains known to require JS rendering (T5 browser) */
