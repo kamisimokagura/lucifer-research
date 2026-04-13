@@ -200,7 +200,7 @@ export class InstagramExtractor implements Extractor {
   canHandle(url: string): boolean {
     try {
       const h = new URL(url).hostname.replace(/^(www\.|m\.)/, "");
-      return h === "instagram.com" && parseShortcode(url) !== null;
+      return (h === "instagram.com" || h === "instagr.am") && parseShortcode(url) !== null;
     } catch {
       return false;
     }
