@@ -1,20 +1,8 @@
 export type TrustLevel = "verified" | "unverified" | "conflicted";
 
-export type ContentType =
-  | "article"
-  | "social"
-  | "github"
-  | "video"
-  | "feed"
-  | "other";
+export type ContentType = "article" | "social" | "github" | "video" | "feed" | "other";
 
-export type ExtractorTier =
-  | "api"
-  | "rss"
-  | "jina"
-  | "readability"
-  | "browser"
-  | "experimental";
+export type ExtractorTier = "api" | "rss" | "jina" | "readability" | "browser" | "experimental";
 
 export type Platform =
   | "github"
@@ -81,6 +69,20 @@ export interface ResearchConfig {
   blueskyIdentifier?: string;
   blueskyPassword?: string;
   qiitaToken?: string;
+  /** Instagram extraction options. */
+  instagram?: {
+    /**
+     * Override the GraphQL doc_id used by InstagramExtractor.
+     * Meta rotates this value every 2–4 weeks; update here when the
+     * GraphQL tier starts returning empty data.
+     */
+    docId?: string;
+    /**
+     * Meta Graph API access token for the optional official oEmbed tier.
+     * Requires a registered Facebook App with instagram_basic permission.
+     */
+    metaToken?: string;
+  };
   /** Max parallel extractions (default: 5) */
   concurrency?: number;
 }

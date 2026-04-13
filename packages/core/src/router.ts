@@ -32,9 +32,20 @@ const DOMAIN_ROUTES: Record<string, RouteInfo> = {
   // substack.com base site; *.substack.com subdomains handled by suffix check below
   "substack.com": { tier: "rss", platform: "web", extractorKey: "rss" },
 
-  // NOTE: x.com/twitter.com, instagram.com, tiktok.com are intentionally omitted.
-  // Stealth browser extraction (Task 5 / rebrowser-playwright) is not yet implemented.
-  // These URLs fall through to the Readability fallback until T5 ships.
+  // --- Social platforms ---
+  "twitter.com": { tier: "api", platform: "x", extractorKey: "x" },
+  "x.com": { tier: "api", platform: "x", extractorKey: "x" },
+  "mobile.twitter.com": { tier: "api", platform: "x", extractorKey: "x" },
+  "mobile.x.com": { tier: "api", platform: "x", extractorKey: "x" },
+
+  "tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
+  "vm.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
+  "vt.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
+  "m.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
+
+  // Instagram uses an unofficial GraphQL endpoint + OGP fallback (no cookie required).
+  // See InstagramExtractor for doc_id rotation strategy.
+  "instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
 };
 
 /** Domains known to require JS rendering (T5 browser) */

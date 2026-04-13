@@ -4,9 +4,12 @@ export { HackerNewsExtractor } from "./api/hackernews.js";
 export { BlueskyExtractor } from "./api/bluesky.js";
 export { YouTubeExtractor } from "./api/youtube.js";
 export { QiitaExtractor } from "./api/qiita.js";
+export { XExtractor } from "./api/x.js";
+export { TikTokExtractor } from "./api/tiktok.js";
 export { JinaExtractor } from "./web/jina.js";
 export { RssExtractor } from "./feed/rss.js";
 export { ReadabilityExtractor } from "./web/readability.js";
+export { InstagramExtractor } from "./web/instagram.js";
 
 // Local type definitions mirroring @lucifer/core (workspace package not yet built)
 export type ExtractorTier = "api" | "rss" | "jina" | "readability" | "browser" | "experimental";
@@ -59,9 +62,12 @@ import { HackerNewsExtractor } from "./api/hackernews.js";
 import { BlueskyExtractor } from "./api/bluesky.js";
 import { YouTubeExtractor } from "./api/youtube.js";
 import { QiitaExtractor } from "./api/qiita.js";
+import { XExtractor } from "./api/x.js";
+import { TikTokExtractor } from "./api/tiktok.js";
 import { JinaExtractor } from "./web/jina.js";
 import { RssExtractor } from "./feed/rss.js";
 import { ReadabilityExtractor } from "./web/readability.js";
+import { InstagramExtractor } from "./web/instagram.js";
 
 /**
  * Create and return the default extractor registry ordered by tier priority.
@@ -74,6 +80,10 @@ export function createDefaultRegistry(config?: {
   githubToken?: string;
   jinaApiKey?: string;
   qiitaToken?: string;
+  /** Override Instagram GraphQL doc_id when Meta rotates it (every 2–4 weeks). */
+  instagramDocId?: string;
+  /** Meta Graph API access token for optional Instagram oEmbed tier. */
+  instagramMetaToken?: string;
 }): Map<string, Extractor> {
   const registry = new Map<string, Extractor>();
   // API-tier first (most authoritative, structured data)
@@ -82,11 +92,21 @@ export function createDefaultRegistry(config?: {
   registry.set("bluesky", new BlueskyExtractor());
   registry.set("youtube", new YouTubeExtractor());
   registry.set("qiita", new QiitaExtractor(config?.qiitaToken));
+  registry.set("x", new XExtractor());
+  registry.set("tiktok", new TikTokExtractor());
   // Feed-tier (RSS/Atom, no JS rendering needed)
   registry.set("rss", new RssExtractor());
   // Web-tier (Jina reader service, then local Readability fallback)
   registry.set("jina", new JinaExtractor(config?.jinaApiKey));
   registry.set("readability", new ReadabilityExtractor());
+  // Experimental-tier (unofficial APIs; fallback chain built-in)
+  registry.set(
+    "instagram",
+    new InstagramExtractor({
+      ...(config?.instagramDocId !== undefined && { docId: config.instagramDocId }),
+      ...(config?.instagramMetaToken !== undefined && { metaToken: config.instagramMetaToken }),
+    }),
+  );
   return registry;
 }
 
