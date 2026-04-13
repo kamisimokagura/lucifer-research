@@ -94,12 +94,8 @@ export function createDefaultRegistry(config?: {
   registry.set("qiita", new QiitaExtractor(config?.qiitaToken));
   registry.set("x", new XExtractor());
   registry.set("tiktok", new TikTokExtractor());
-  // Feed-tier (RSS/Atom, no JS rendering needed)
-  registry.set("rss", new RssExtractor());
-  // Web-tier (Jina reader service, then local Readability fallback)
-  registry.set("jina", new JinaExtractor(config?.jinaApiKey));
-  registry.set("readability", new ReadabilityExtractor());
-  // Experimental-tier (unofficial APIs; fallback chain built-in)
+  // Experimental-tier: must be registered before the generic web extractors (Jina/Readability)
+  // because those accept any HTTPS URL and would shadow platform-specific extractors.
   registry.set(
     "instagram",
     new InstagramExtractor({
@@ -107,6 +103,11 @@ export function createDefaultRegistry(config?: {
       ...(config?.instagramMetaToken !== undefined && { metaToken: config.instagramMetaToken }),
     }),
   );
+  // Feed-tier (RSS/Atom, no JS rendering needed)
+  registry.set("rss", new RssExtractor());
+  // Web-tier (Jina reader service, then local Readability fallback)
+  registry.set("jina", new JinaExtractor(config?.jinaApiKey));
+  registry.set("readability", new ReadabilityExtractor());
   return registry;
 }
 
