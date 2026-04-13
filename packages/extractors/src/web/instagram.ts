@@ -198,7 +198,12 @@ export class InstagramExtractor implements Extractor {
   }
 
   canHandle(url: string): boolean {
-    return parseShortcode(url) !== null;
+    try {
+      const h = new URL(url).hostname.replace(/^(www\.|m\.)/, "");
+      return h === "instagram.com" && parseShortcode(url) !== null;
+    } catch {
+      return false;
+    }
   }
 
   async extract(url: string, opts: ExtractOptions = {}): Promise<ResearchResult> {
