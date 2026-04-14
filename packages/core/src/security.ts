@@ -57,13 +57,12 @@ interface PIPattern {
  */
 const PI_PATTERNS: PIPattern[] = [
   {
-    // Require a determiner/qualifier before the target word (mirrors Kagura "require context"
-    // design principle) so that benign documentation phrases like "ignore instructions in the
-    // sidebar" or "ignore guidelines for beginners" are not flagged.
-    // Covered: "ignore all instructions", "ignore the rules", "ignore your constraints",
-    //          "ignore previous guidelines", "ignore all prior rules", etc.
+    // "ignore all instructions" / "ignore previous rules" — previous/prior/above optional
+    // when "all" is present so that we catch bare "ignore all instructions" (no prior/above).
+    // Bare "ignore instructions" without any qualifier is intentionally excluded to avoid
+    // false positives on documentation phrases like "ignore instructions in the sidebar".
     pattern:
-      /ignore\s+(?:(?:all|these|your|my|the)\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above)\s+)(instructions?|rules?|guidelines?)/i,
+      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above)\s+)(instructions?|rules?|guidelines?)/i,
     description: "Instruction override attempt",
     severity: "block",
   },
@@ -87,12 +86,13 @@ const PI_PATTERNS: PIPattern[] = [
     severity: "block",
   },
   {
-    // "disregard previous instructions", "forget your rules", "override all constraints"
-    // Also catches "disregard everything" / "override everything" (bare imperatives) and
-    // "forget everything above/before/and ..." (explicit reference to prior conversation)
-    // while excluding "Forget everything you know about CSS Grid" (benign knowledge-reset prose).
+    // "forget your rules", "disregard previous instructions", "override all constraints"
+    // "everything" is intentionally excluded: "disregard everything in this folder",
+    // "override everything else with defaults", "forget everything and start fresh" are all
+    // common benign phrases — without additional context they cannot be reliably distinguished
+    // from attack payloads.
     pattern:
-      /(?:forget|disregard|override)\s+(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)|(?:disregard|override)\s+everything\b|(?:forget|disregard|override)\s+everything\s+(?:above|before|and\b)/i,
+      /(?:forget|disregard|override)\s+(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)/i,
     description: "Constraint bypass attempt",
     severity: "block",
   },
