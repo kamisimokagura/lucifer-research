@@ -57,9 +57,11 @@ interface PIPattern {
  */
 const PI_PATTERNS: PIPattern[] = [
   {
-    // "ignore all instructions" / "ignore previous rules" — previous/prior/above optional
+    // Require either "all" or "previous|prior|above" so that generic docs phrases like
+    // "you can ignore instructions in the sidebar" are not flagged.
+    // Matches: "ignore all instructions", "ignore previous rules", "ignore all prior guidelines", etc.
     pattern:
-      /ignore\s+(?:all\s+)?(?:(?:previous|prior|above)\s+)?(instructions?|rules?|guidelines?)/i,
+      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above)\s+)(instructions?|rules?|guidelines?)/i,
     description: "Instruction override attempt",
     severity: "block",
   },
@@ -72,20 +74,22 @@ const PI_PATTERNS: PIPattern[] = [
     severity: "block",
   },
   {
-    // "you are now a/an/the/in X" catches article-based role overrides.
-    // "\w+\s+mode" catches "developer mode", "jailbreak mode" etc. without article.
+    // "you are now a/an/the X" catches article-based role overrides.
+    // "in\s+\w+\s+mode" catches "you are now in developer mode" — the "in" is scoped
+    //   to the mode branch so "you are now in the project directory" is not flagged.
+    // "\w+\s+mode" catches "you are now jailbreak mode", "you are now DAN mode", etc.
     // Bare proper nouns ("You are now DAN") are not caught; that tradeoff is
     // acceptable since instruction-override patterns above are higher risk.
-    pattern: /you\s+are\s+now\s+(?:(?:a|an|the|in)\s+|\w+\s+mode\b)/i,
+    pattern: /you\s+are\s+now\s+(?:(?:a|an|the)\s+|in\s+\w+\s+mode\b|\w+\s+mode\b)/i,
     description: "Role override attempt",
     severity: "block",
   },
   {
-    // "forget everything", "disregard previous instructions", "override your rules"
-    // The everything|previous|prior branch restores coverage for classic bypass phrases
-    // that were missed when only direct noun targets were checked.
+    // "disregard previous instructions", "forget your rules", "override all constraints"
+    // "forget everything" is intentionally excluded — too common in benign article titles
+    // (e.g. "Forget everything you know about CSS Grid").
     pattern:
-      /(?:forget|disregard|override)\s+(?:all\s+)?(?:everything|(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?))/i,
+      /(?:forget|disregard|override)\s+(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)/i,
     description: "Constraint bypass attempt",
     severity: "block",
   },
@@ -302,9 +306,12 @@ export function detectInjection(content: string): string[] {
  * Zero-width characters are normalized for matching but preserved in returned content.
  */
 export function sanitizeContent(raw: string): string {
+  // Normalize the FULL raw string before size-truncation so that an attacker cannot
+  // hide injections behind 1 MB of zero-width chars that get discarded by the truncation.
+  const normalized = normalizeForMatching(raw);
+  // Enforce size limit on the original (not normalized) content so zero-width chars
+  // that are legitimate (ZWNJ/ZWJ in Persian/Indic scripts) are preserved in output.
   const sized = enforceContentSize(raw);
-  // Normalize invisible chars for detection only — do not strip from returned content
-  const normalized = normalizeForMatching(sized);
 
   const blockHits = PI_PATTERNS.filter((p) => p.severity === "block" && p.pattern.test(normalized));
   if (blockHits.length > 0) {
