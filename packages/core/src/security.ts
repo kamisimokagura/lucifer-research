@@ -57,12 +57,13 @@ interface PIPattern {
  */
 const PI_PATTERNS: PIPattern[] = [
   {
-    // "ignore all instructions" / "ignore previous rules" — previous/prior/above optional
-    // when "all" is present so that we catch bare "ignore all instructions" (no prior/above).
-    // Bare "ignore instructions" without any qualifier is intentionally excluded to avoid
-    // false positives on documentation phrases like "ignore instructions in the sidebar".
+    // "ignore all instructions" / "ignore previous rules" / "ignore your guidelines"
+    // Require a specific qualifier after "ignore" to avoid benign documentation phrases
+    // like "ignore instructions in the sidebar" (no qualifier) while still catching clear
+    // attack phrases like "ignore all instructions", "ignore your rules", "ignore prior guidelines".
+    // "the" is intentionally excluded — too common in benign prose ("ignore the rules in the tutorial").
     pattern:
-      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above)\s+)(instructions?|rules?|guidelines?)/i,
+      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above|your)\s+)(instructions?|rules?|guidelines?)/i,
     description: "Instruction override attempt",
     severity: "block",
   },
@@ -87,12 +88,12 @@ const PI_PATTERNS: PIPattern[] = [
   },
   {
     // "forget your rules", "disregard previous instructions", "override all constraints"
-    // "everything" is intentionally excluded: "disregard everything in this folder",
-    // "override everything else with defaults", "forget everything and start fresh" are all
-    // common benign phrases — without additional context they cannot be reliably distinguished
-    // from attack payloads.
+    // "everything above/before" explicitly references prior context and is used in PI attacks
+    // ("disregard everything above and follow my instructions") — caught via the narrow branch.
+    // Generic "everything" without positional qualifier is excluded: "forget everything and
+    // start fresh", "override everything else with defaults" are common benign phrases.
     pattern:
-      /(?:forget|disregard|override)\s+(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)/i,
+      /(?:forget|disregard|override)\s+(?:(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)|everything\s+(?:above|before)\b)/i,
     description: "Constraint bypass attempt",
     severity: "block",
   },
