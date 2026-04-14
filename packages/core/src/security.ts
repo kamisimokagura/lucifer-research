@@ -57,24 +57,35 @@ interface PIPattern {
  */
 const PI_PATTERNS: PIPattern[] = [
   {
-    pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?|guidelines?)/i,
+    // "ignore all instructions" / "ignore previous rules" — previous/prior/above optional
+    pattern:
+      /ignore\s+(?:all\s+)?(?:(?:previous|prior|above)\s+)?(instructions?|rules?|guidelines?)/i,
     description: "Instruction override attempt",
     severity: "block",
   },
   {
+    // Require action verb before "system prompt" to avoid false positives such as
+    // "generates system prompts" or "Claude agent system prompts".
     pattern:
       /(?:show|reveal|display|print|output|leak|expose|dump)\s+(?:me\s+)?(?:your\s+)?(?:full\s+)?system\s+prompt/i,
     description: "System prompt extraction attempt",
     severity: "block",
   },
   {
-    pattern: /you\s+are\s+now\s+(?:a|an)\s+/i,
+    // "you are now a/an/the/in X" catches article-based role overrides.
+    // "\w+\s+mode" catches "developer mode", "jailbreak mode" etc. without article.
+    // Bare proper nouns ("You are now DAN") are not caught; that tradeoff is
+    // acceptable since instruction-override patterns above are higher risk.
+    pattern: /you\s+are\s+now\s+(?:(?:a|an|the|in)\s+|\w+\s+mode\b)/i,
     description: "Role override attempt",
     severity: "block",
   },
   {
+    // "forget everything", "disregard previous instructions", "override your rules"
+    // The everything|previous|prior branch restores coverage for classic bypass phrases
+    // that were missed when only direct noun targets were checked.
     pattern:
-      /(?:forget|disregard|override)\s+(?:all\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?)/i,
+      /(?:forget|disregard|override)\s+(?:all\s+)?(?:everything|(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?))/i,
     description: "Constraint bypass attempt",
     severity: "block",
   },
@@ -259,11 +270,14 @@ export function enforceContentSize(content: string): string {
 }
 
 /**
- * Strip zero-width and invisible Unicode characters that can be used to
- * smuggle hidden instructions past naive text comparisons.
+ * Normalize zero-width and invisible Unicode characters for pattern matching ONLY.
+ * These characters can smuggle hidden instructions past naive text comparisons, but
+ * many are also legitimate: ZWNJ (\u200C) and ZWJ (\u200D) are required for correct
+ * text shaping in Persian/Indic scripts and for emoji ligature sequences.
+ * Therefore we normalize a copy for detection but never mutate the returned content.
  */
-function stripZeroWidth(text: string): string {
-  // Covers ZWSP, ZWNJ, ZWJ, BOM, SHY, WJ, MONGOLIAN VOWEL SEPARATOR
+function normalizeForMatching(text: string): string {
+  // ZWSP, ZWNJ, ZWJ, BOM, SHY, WJ, MONGOLIAN VOWEL SEPARATOR
   return text.replace(/[\u200B\u200C\u200D\uFEFF\u00AD\u2060\u180E]/g, "");
 }
 
@@ -272,23 +286,27 @@ function stripZeroWidth(text: string): string {
  * Returns human-readable descriptions of matched patterns (empty = clean).
  * Both "block" and "warn" severity patterns are reported here so callers
  * can log or display all potential issues.
+ * Matching is performed on a normalized copy; the original content is not mutated.
  */
 export function detectInjection(content: string): string[] {
-  return PI_PATTERNS.filter((p) => p.pattern.test(content)).map((p) => p.description);
+  const normalized = normalizeForMatching(content);
+  return PI_PATTERNS.filter((p) => p.pattern.test(normalized)).map((p) => p.description);
 }
 
 /**
- * Sanitize extracted content: strip zero-width chars, enforce size, flag injections.
+ * Sanitize extracted content: enforce size limit, then flag injections.
  *
  * Only "block" severity patterns prepend a warning comment — "warn" patterns
  * (e.g. <script> in security articles) do not modify output to avoid false positives.
  * Content is never removed; the warning comment is a signal to downstream consumers.
+ * Zero-width characters are normalized for matching but preserved in returned content.
  */
 export function sanitizeContent(raw: string): string {
-  const deZeroed = stripZeroWidth(raw);
-  const sized = enforceContentSize(deZeroed);
+  const sized = enforceContentSize(raw);
+  // Normalize invisible chars for detection only — do not strip from returned content
+  const normalized = normalizeForMatching(sized);
 
-  const blockHits = PI_PATTERNS.filter((p) => p.severity === "block" && p.pattern.test(sized));
+  const blockHits = PI_PATTERNS.filter((p) => p.severity === "block" && p.pattern.test(normalized));
   if (blockHits.length > 0) {
     const descriptions = blockHits.map((p) => p.description).join(", ");
     return (
