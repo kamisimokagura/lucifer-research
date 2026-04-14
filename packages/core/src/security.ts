@@ -57,11 +57,13 @@ interface PIPattern {
  */
 const PI_PATTERNS: PIPattern[] = [
   {
-    // Require either "all" or "previous|prior|above" so that generic docs phrases like
-    // "you can ignore instructions in the sidebar" are not flagged.
-    // Matches: "ignore all instructions", "ignore previous rules", "ignore all prior guidelines", etc.
+    // Require a determiner/qualifier before the target word (mirrors Kagura "require context"
+    // design principle) so that benign documentation phrases like "ignore instructions in the
+    // sidebar" or "ignore guidelines for beginners" are not flagged.
+    // Covered: "ignore all instructions", "ignore the rules", "ignore your constraints",
+    //          "ignore previous guidelines", "ignore all prior rules", etc.
     pattern:
-      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above)\s+)(instructions?|rules?|guidelines?)/i,
+      /ignore\s+(?:(?:all|these|your|my|the)\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above)\s+)(instructions?|rules?|guidelines?)/i,
     description: "Instruction override attempt",
     severity: "block",
   },
@@ -86,10 +88,11 @@ const PI_PATTERNS: PIPattern[] = [
   },
   {
     // "disregard previous instructions", "forget your rules", "override all constraints"
-    // "forget everything" is intentionally excluded — too common in benign article titles
-    // (e.g. "Forget everything you know about CSS Grid").
+    // Also catches "disregard everything" / "override everything" (bare imperatives) and
+    // "forget everything above/before/and ..." (explicit reference to prior conversation)
+    // while excluding "Forget everything you know about CSS Grid" (benign knowledge-reset prose).
     pattern:
-      /(?:forget|disregard|override)\s+(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)/i,
+      /(?:forget|disregard|override)\s+(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)|(?:disregard|override)\s+everything\b|(?:forget|disregard|override)\s+everything\s+(?:above|before|and\b)/i,
     description: "Constraint bypass attempt",
     severity: "block",
   },
@@ -306,11 +309,14 @@ export function detectInjection(content: string): string[] {
  * Zero-width characters are normalized for matching but preserved in returned content.
  */
 export function sanitizeContent(raw: string): string {
-  // Normalize the FULL raw string before size-truncation so that an attacker cannot
-  // hide injections behind 1 MB of zero-width chars that get discarded by the truncation.
-  const normalized = normalizeForMatching(raw);
-  // Enforce size limit on the original (not normalized) content so zero-width chars
-  // that are legitimate (ZWNJ/ZWJ in Persian/Indic scripts) are preserved in output.
+  // Scan a 2 MB window so that a "1 MB of ZWSP + attack string" bypass is blocked
+  // while keeping per-call memory bounded even under concurrent extraction.
+  // 2× the content limit means an attacker would need >2 MB of invisible padding to evade.
+  const MAX_SCAN_CHARS = MAX_CONTENT_BYTES * 2;
+  const rawForScan = raw.length > MAX_SCAN_CHARS ? raw.slice(0, MAX_SCAN_CHARS) : raw;
+  // Normalize invisible chars for detection only — do not strip from returned content.
+  const normalized = normalizeForMatching(rawForScan);
+  // Enforce size limit on the original content for output (preserves ZWNJ/ZWJ in scripts).
   const sized = enforceContentSize(raw);
 
   const blockHits = PI_PATTERNS.filter((p) => p.severity === "block" && p.pattern.test(normalized));
