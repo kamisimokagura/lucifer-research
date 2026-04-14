@@ -62,8 +62,12 @@ const PI_PATTERNS: PIPattern[] = [
     // like "ignore instructions in the sidebar" (no qualifier) while still catching clear
     // attack phrases like "ignore all instructions", "ignore your rules", "ignore prior guidelines".
     // "the" is intentionally excluded — too common in benign prose ("ignore the rules in the tutorial").
+    // Negative lookahead excludes file references: "ignore your instructions.md file" or
+    // "ignore your rules file" are benign filesystem instructions, not prompt injection.
+    // The \b before the lookahead prevents backtracking (e.g., matching "instruction" without
+    // the 's' to shift the lookahead position past ".md") because \b fails mid-word.
     pattern:
-      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above|your)\s+)(instructions?|rules?|guidelines?)/i,
+      /ignore\s+(?:all\s+(?:(?:previous|prior|above)\s+)?|(?:previous|prior|above|your)\s+)(instructions?|rules?|guidelines?)\b(?!\s*\.\w+|\s+files?\b)/i,
     description: "Instruction override attempt",
     severity: "block",
   },
@@ -92,8 +96,11 @@ const PI_PATTERNS: PIPattern[] = [
     // ("disregard everything above and follow my instructions") — caught via the narrow branch.
     // Generic "everything" without positional qualifier is excluded: "forget everything and
     // start fresh", "override everything else with defaults" are common benign phrases.
+    // The lookahead on the everything branch requires a PI-context follower (and/this/these,
+    // clause-ending punctuation, or end-of-string) to avoid matching technical prose like
+    // "override everything before rendering" or "forget everything above 500Hz".
     pattern:
-      /(?:forget|disregard|override)\s+(?:(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)|everything\s+(?:above|before)\b)/i,
+      /(?:forget|disregard|override)\s+(?:(?:all\s+)?(?:(?:previous|prior)\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?|guidelines?)|everything\s+(?:above|before)\b(?=\s+(?:and|this|these)\b|\s*[.,!?;]|\s*$))/i,
     description: "Constraint bypass attempt",
     severity: "block",
   },
