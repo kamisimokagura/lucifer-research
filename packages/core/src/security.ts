@@ -36,15 +36,70 @@ const REBINDING_IP_PATTERNS = [
 // Block well-known DNS rebinding services regardless of subdomain
 const REBINDING_SERVICES = new Set(["nip.io", "sslip.io", "xip.io", "localtest.me", "vcap.me"]);
 
-const INJECTION_PATTERNS = [
-  /ignore (all |previous |prior )?(instructions?|prompts?|rules?)/i,
-  /system prompt/i,
-  /jailbreak/i,
-  /\[INST\]/,
-  /<\|system\|>/,
-  /you are now/i,
-  /forget everything/i,
-  /disregard (all |your )?previous/i,
+interface PIPattern {
+  pattern: RegExp;
+  description: string;
+  severity: "block" | "warn";
+}
+
+/**
+ * Prompt-injection detection patterns.
+ *
+ * "block" — clear attack intent; triggers a warning comment in sanitizeContent().
+ * "warn"  — may appear in legitimate content (e.g. security articles); content is
+ *           returned unmodified so callers are not surprised by false positives.
+ *
+ * Design rationale (mirrors Kagura Search patterns.ts):
+ *  - Require action verb + context before "system prompt" to avoid matching
+ *    phrases like "generates system prompts" or "claude agent system prompts".
+ *  - Require "a/an" after "you are now" to avoid matching "you are now aware of…".
+ *  - Drop bare /jailbreak/i — appears in every security tool description list.
+ */
+const PI_PATTERNS: PIPattern[] = [
+  {
+    pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?|guidelines?)/i,
+    description: "Instruction override attempt",
+    severity: "block",
+  },
+  {
+    pattern:
+      /(?:show|reveal|display|print|output|leak|expose|dump)\s+(?:me\s+)?(?:your\s+)?(?:full\s+)?system\s+prompt/i,
+    description: "System prompt extraction attempt",
+    severity: "block",
+  },
+  {
+    pattern: /you\s+are\s+now\s+(?:a|an)\s+/i,
+    description: "Role override attempt",
+    severity: "block",
+  },
+  {
+    pattern:
+      /(?:forget|disregard|override)\s+(?:all\s+)?(?:your\s+)?(?:rules?|instructions?|constraints?)/i,
+    description: "Constraint bypass attempt",
+    severity: "block",
+  },
+  {
+    pattern: /\bdo\s+not\s+follow\s+(?:any|your)\s+(?:rules?|guidelines?)\b/i,
+    description: "Rule negation attempt",
+    severity: "block",
+  },
+  {
+    // LLaMA/Mistral instruction tag — virtually never appears in legitimate content
+    pattern: /\[INST\]/,
+    description: "LLaMA instruction tag",
+    severity: "block",
+  },
+  {
+    // Phi-style system formatting tag
+    pattern: /<\|system\|>/,
+    description: "LLM system formatting tag",
+    severity: "block",
+  },
+  {
+    pattern: /<script[\s>]/i,
+    description: "Script tag detected",
+    severity: "warn",
+  },
 ];
 
 const MAX_CONTENT_BYTES = 1_048_576; // 1 MB
@@ -204,30 +259,40 @@ export function enforceContentSize(content: string): string {
 }
 
 /**
- * Scan extracted content for prompt-injection patterns.
- * Returns detected patterns (empty = clean).
+ * Strip zero-width and invisible Unicode characters that can be used to
+ * smuggle hidden instructions past naive text comparisons.
  */
-export function detectInjection(content: string): string[] {
-  const found: string[] = [];
-  for (const pattern of INJECTION_PATTERNS) {
-    if (pattern.test(content)) {
-      found.push(pattern.source);
-    }
-  }
-  return found;
+function stripZeroWidth(text: string): string {
+  // Covers ZWSP, ZWNJ, ZWJ, BOM, SHY, WJ, MONGOLIAN VOWEL SEPARATOR
+  return text.replace(/[\u200B\u200C\u200D\uFEFF\u00AD\u2060\u180E]/g, "");
 }
 
 /**
- * Sanitize extracted content: enforce size + flag injections.
- * Does NOT remove injections (preserve for transparency), but
- * wraps flagged text in a warning comment.
+ * Scan extracted content for prompt-injection patterns.
+ * Returns human-readable descriptions of matched patterns (empty = clean).
+ * Both "block" and "warn" severity patterns are reported here so callers
+ * can log or display all potential issues.
+ */
+export function detectInjection(content: string): string[] {
+  return PI_PATTERNS.filter((p) => p.pattern.test(content)).map((p) => p.description);
+}
+
+/**
+ * Sanitize extracted content: strip zero-width chars, enforce size, flag injections.
+ *
+ * Only "block" severity patterns prepend a warning comment — "warn" patterns
+ * (e.g. <script> in security articles) do not modify output to avoid false positives.
+ * Content is never removed; the warning comment is a signal to downstream consumers.
  */
 export function sanitizeContent(raw: string): string {
-  const sized = enforceContentSize(raw);
-  const injections = detectInjection(sized);
-  if (injections.length > 0) {
+  const deZeroed = stripZeroWidth(raw);
+  const sized = enforceContentSize(deZeroed);
+
+  const blockHits = PI_PATTERNS.filter((p) => p.severity === "block" && p.pattern.test(sized));
+  if (blockHits.length > 0) {
+    const descriptions = blockHits.map((p) => p.description).join(", ");
     return (
-      `<!-- WARNING: Possible prompt-injection detected (${injections.length} pattern(s)) -->\n` +
+      `<!-- WARNING: Possible prompt-injection detected (${blockHits.length} pattern(s): ${descriptions}) -->\n` +
       sized
     );
   }
