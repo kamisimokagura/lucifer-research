@@ -1,5 +1,5 @@
 // lucifer-research URL テスト Round 3
-// Bluesky × 3, TikTok × 3, Zenn × 2, Medium × 2, note × 2
+// Bluesky × 3, TikTok × 2, Zenn × 2, Medium × 2, note × 2
 // Expected extractor is tracked so fallbacks don't silently mask primary failures.
 import { ResearchPipeline } from "./packages/core/dist/pipeline.js";
 import { createDefaultRegistry } from "./packages/extractors/dist/index.js";
@@ -9,17 +9,17 @@ const TEST_CASES = [
   // expectedExtractor: "api" when AT Protocol works, "jina" for fallback
   // Both are acceptable; we track which path was actually taken.
   {
-    url: "https://bsky.app/profile/bsky.app/post/3jxqyd7q6m22i",
+    url: "https://bsky.app/profile/bsky.app/post/3mjhun5ptvs2r",
     preferredExtractor: "api",
     expectedPlatform: "bluesky",
   },
   {
-    url: "https://bsky.app/profile/jay.bsky.team/post/3k4qda3omye27",
+    url: "https://bsky.app/profile/jay.bsky.team/post/3mjaug2i55s25",
     preferredExtractor: "api",
     expectedPlatform: "bluesky",
   },
   {
-    url: "https://bsky.app/profile/pfrazee.com/post/3kgqqsyfabs2k",
+    url: "https://bsky.app/profile/pfrazee.com/post/3mjhow3rmqs2v",
     preferredExtractor: "api",
     expectedPlatform: "bluesky",
   },
@@ -48,12 +48,15 @@ const TEST_CASES = [
     expectedPlatform: "zenn",
   },
   {
-    url: "https://zenn.dev/microsoft/articles/dotnet-9-ga",
+    url: "https://zenn.dev/rei2718/articles/1f291d4bf37e65",
     preferredExtractor: "rss",
     expectedPlatform: "zenn",
   },
 
   // --- Medium (RSS primary, Jina fallback) ---
+  // Note: medium.com/feed/* returns HTTP 404 platform-wide (RSS deprecated by Medium).
+  // Jina fallback correctly identifies platform:"medium" via PLATFORM_MAP but content
+  // is paywalled (title="Medium"). Expect ⚠️ fallback for all Medium URLs.
   {
     url: "https://medium.com/@buildermindset/the-ai-coding-assistant-showdown-2026-claude-code-vs-cursor-vs-copilot-x-7b9a1de25684",
     preferredExtractor: "rss",
@@ -67,12 +70,12 @@ const TEST_CASES = [
 
   // --- note.com (RSS primary, Jina fallback) ---
   {
-    url: "https://note.com/masahirochaen/n/ncc0e3dc4a9ae",
+    url: "https://note.com/aishift/n/na0a56d5abbdf",
     preferredExtractor: "rss",
     expectedPlatform: "note",
   },
   {
-    url: "https://note.com/taziku_co/n/na5d00960e012",
+    url: "https://note.com/aishift/n/na66245929d8a",
     preferredExtractor: "rss",
     expectedPlatform: "note",
   },
