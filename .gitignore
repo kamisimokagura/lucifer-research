@@ -5,3 +5,8 @@ dist/
 coverage/
 .env
 .env.local
+
+# compiled artifacts accidentally written into src/ directories
+**/src/**/*.js
+**/src/**/*.d.ts
+**/src/**/*.d.ts.map
