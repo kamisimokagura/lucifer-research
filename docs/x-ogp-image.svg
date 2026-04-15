@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070009"/>
+      <stop offset="50%" stop-color="#0e001a"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="#f0d78c"/>
+    </linearGradient>
+    <linearGradient id="goldV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0d78c"/>
+      <stop offset="100%" stop-color="#c9a84c"/>
+    </linearGradient>
+    <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="beamGrad" cx="100%" cy="0%" r="75%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.10"/>
+      <stop offset="55%" stop-color="#7c3aed" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#4c1d95" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="480" fill="url(#bg)"/>
+
+  <!-- Fallen angel light — radial glow from upper-right -->
+  <rect width="1200" height="480" fill="url(#beamGrad)"/>
+
+  <!-- Subtle violet grid -->
+  <g opacity="0.04" stroke="#7c3aed" stroke-width="0.5">
+    <line x1="60" y1="0" x2="60" y2="480"/><line x1="120" y1="0" x2="120" y2="480"/>
+    <line x1="180" y1="0" x2="180" y2="480"/><line x1="240" y1="0" x2="240" y2="480"/>
+    <line x1="300" y1="0" x2="300" y2="480"/><line x1="360" y1="0" x2="360" y2="480"/>
+    <line x1="420" y1="0" x2="420" y2="480"/><line x1="480" y1="0" x2="480" y2="480"/>
+    <line x1="540" y1="0" x2="540" y2="480"/><line x1="600" y1="0" x2="600" y2="480"/>
+    <line x1="660" y1="0" x2="660" y2="480"/><line x1="720" y1="0" x2="720" y2="480"/>
+    <line x1="780" y1="0" x2="780" y2="480"/><line x1="840" y1="0" x2="840" y2="480"/>
+    <line x1="900" y1="0" x2="900" y2="480"/><line x1="960" y1="0" x2="960" y2="480"/>
+    <line x1="1020" y1="0" x2="1020" y2="480"/><line x1="1080" y1="0" x2="1080" y2="480"/>
+    <line x1="1140" y1="0" x2="1140" y2="480"/>
+    <line x1="0" y1="60" x2="1200" y2="60"/><line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="180" x2="1200" y2="180"/><line x1="0" y1="240" x2="1200" y2="240"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="360" x2="1200" y2="360"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+  </g>
+
+  <!-- Ambient depth glows -->
+  <circle cx="580" cy="150" r="200" fill="#7c3aed" opacity="0.03"/>
+  <circle cx="280" cy="300" r="130" fill="#6d28d9" opacity="0.03"/>
+  <circle cx="980" cy="260" r="160" fill="#c9a84c" opacity="0.02"/>
+
+  <!-- Tiny decorative morning stars scattered in background -->
+  <g fill="#f0d78c" opacity="0.20">
+    <g transform="translate(940,108) scale(0.25)">
+      <path d="M 0,-35 L 4.24,-4.24 L 22,0 L 4.24,4.24 L 0,35 L -4.24,4.24 L -22,0 L -4.24,-4.24 Z"/>
+    </g>
+    <g transform="translate(1062,196) scale(0.18)">
+      <path d="M 0,-35 L 4.24,-4.24 L 22,0 L 4.24,4.24 L 0,35 L -4.24,4.24 L -22,0 L -4.24,-4.24 Z"/>
+    </g>
+    <g transform="translate(1128,132) scale(0.22)">
+      <path d="M 0,-35 L 4.24,-4.24 L 22,0 L 4.24,4.24 L 0,35 L -4.24,4.24 L -22,0 L -4.24,-4.24 Z"/>
+    </g>
+  </g>
+
+  <!-- ── HEADER ── -->
+
+  <!-- Morning star icon: soft glow + elongated 4-pointed star -->
+  <circle cx="75" cy="50" r="38" fill="url(#starGlow)"/>
+  <g transform="translate(75, 50)">
+    <path d="M 0,-35 L 4.24,-4.24 L 22,0 L 4.24,4.24 L 0,35 L -4.24,4.24 L -22,0 L -4.24,-4.24 Z" fill="url(#goldV)"/>
+  </g>
+
+  <!-- Title: "lucifer" white + "-research" gold -->
+  <text x="118" y="44" font-family="'Segoe UI','SF Pro Display',Arial,sans-serif" font-size="46" font-weight="700">
+    <tspan fill="#ffffff">lucifer</tspan><tspan fill="url(#gold)">-research</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="118" y="74" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#c4b5fd" letter-spacing="1.5">光の堕天使  ·  morning star of web extraction</text>
+
+  <!-- Divider -->
+  <line x1="48" y1="92" x2="1152" y2="92" stroke="#4c1d95" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- ── LEFT PANEL: EXTRACTION PIPELINE (x: 48–588) ── -->
+
+  <text x="48" y="116" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#a78bfa" letter-spacing="1.5">EXTRACTION PIPELINE</text>
+
+  <!-- Pipeline flow: URL → Router → Extractor → ResearchResult -->
+  <rect x="48" y="126" width="64" height="30" rx="4" fill="#140024" stroke="#7c3aed" stroke-width="1"/>
+  <text x="80" y="146" font-family="Consolas,monospace" font-size="12" fill="#e2d9f3" text-anchor="middle">URL</text>
+  <line x1="112" y1="141" x2="132" y2="141" stroke="#4c1d95" stroke-width="1.5"/>
+  <polygon points="132,137 140,141 132,145" fill="#4c1d95"/>
+
+  <rect x="140" y="126" width="78" height="30" rx="4" fill="#140024" stroke="#7c3aed" stroke-width="1"/>
+  <text x="179" y="146" font-family="Consolas,monospace" font-size="12" fill="#e2d9f3" text-anchor="middle">Router</text>
+  <line x1="218" y1="141" x2="238" y2="141" stroke="#4c1d95" stroke-width="1.5"/>
+  <polygon points="238,137 246,141 238,145" fill="#4c1d95"/>
+
+  <rect x="246" y="126" width="88" height="30" rx="4" fill="#140024" stroke="#7c3aed" stroke-width="1"/>
+  <text x="290" y="146" font-family="Consolas,monospace" font-size="12" fill="#e2d9f3" text-anchor="middle">Extractor</text>
+  <line x1="334" y1="141" x2="354" y2="141" stroke="#4c1d95" stroke-width="1.5"/>
+  <polygon points="354,137 362,141 354,145" fill="#4c1d95"/>
+
+  <rect x="362" y="118" width="178" height="46" rx="4" fill="#1a0030" stroke="#c9a84c" stroke-width="1.5"/>
+  <text x="451" y="137" font-family="Consolas,monospace" font-size="12" fill="#f0d78c" text-anchor="middle">ResearchResult</text>
+  <text x="451" y="153" font-family="Consolas,monospace" font-size="10" fill="#a78bfa" text-anchor="middle">title · content · trust · engagement</text>
+
+  <!-- Tiered fallback label -->
+  <text x="48" y="193" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#a78bfa" letter-spacing="1.5">TIERED FALLBACK</text>
+
+  <!-- T1: API -->
+  <rect x="48" y="203" width="110" height="50" rx="4" fill="#0e0020" stroke="#7c3aed" stroke-width="1" stroke-opacity="0.9"/>
+  <text x="103" y="224" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#f0d78c" font-weight="600" text-anchor="middle">T1  API</text>
+  <text x="103" y="240" font-family="'Segoe UI',Arial,sans-serif" font-size="9" fill="#7c5cbc" text-anchor="middle">Native platform</text>
+  <text x="162" y="231" font-family="Arial,sans-serif" font-size="16" fill="#4c1d95">→</text>
+
+  <!-- T2: RSS -->
+  <rect x="176" y="203" width="110" height="50" rx="4" fill="#0e0020" stroke="#7c3aed" stroke-width="1" stroke-opacity="0.65"/>
+  <text x="231" y="224" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#e2d9f3" font-weight="600" text-anchor="middle">T2  RSS</text>
+  <text x="231" y="240" font-family="'Segoe UI',Arial,sans-serif" font-size="9" fill="#7c5cbc" text-anchor="middle">Feed parsing</text>
+  <text x="290" y="231" font-family="Arial,sans-serif" font-size="16" fill="#4c1d95">→</text>
+
+  <!-- T3: Jina -->
+  <rect x="304" y="203" width="110" height="50" rx="4" fill="#0e0020" stroke="#7c3aed" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="359" y="224" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#e2d9f3" font-weight="600" text-anchor="middle">T3  Jina</text>
+  <text x="359" y="240" font-family="'Segoe UI',Arial,sans-serif" font-size="9" fill="#7c5cbc" text-anchor="middle">Reader service</text>
+  <text x="418" y="231" font-family="Arial,sans-serif" font-size="16" fill="#4c1d95">→</text>
+
+  <!-- T4: Readability -->
+  <rect x="432" y="203" width="130" height="50" rx="4" fill="#0e0020" stroke="#7c3aed" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="497" y="224" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#e2d9f3" font-weight="600" text-anchor="middle">T4  Readability</text>
+  <text x="497" y="240" font-family="'Segoe UI',Arial,sans-serif" font-size="9" fill="#7c5cbc" text-anchor="middle">HTML parse</text>
+
+  <!-- Vertical panel divider -->
+  <line x1="600" y1="100" x2="600" y2="388" stroke="#3b0764" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- ── RIGHT PANEL: PLATFORMS (x: 616–1152) ── -->
+
+  <text x="616" y="116" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#a78bfa" letter-spacing="1.5">SUPPORTED PLATFORMS  ·  10+</text>
+
+  <!-- Platform grid: 3 cols × 4 rows -->
+  <!-- Col 1: YouTube / X / GitHub / TikTok -->
+  <text x="628" y="142" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">YouTube</tspan></text>
+  <text x="628" y="168" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">X (Twitter)</tspan></text>
+  <text x="628" y="194" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">GitHub</tspan></text>
+  <text x="628" y="220" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">TikTok</tspan></text>
+
+  <!-- Col 2: HackerNews / Bluesky / Instagram / Medium -->
+  <text x="820" y="142" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">HackerNews</tspan></text>
+  <text x="820" y="168" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">Bluesky</tspan></text>
+  <text x="820" y="194" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">Instagram</tspan></text>
+  <text x="820" y="220" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">Medium</tspan></text>
+
+  <!-- Col 3: Qiita / note / Zenn / Web -->
+  <text x="1012" y="142" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">Qiita</tspan></text>
+  <text x="1012" y="168" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">note</tspan></text>
+  <text x="1012" y="194" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">Zenn</tspan></text>
+  <text x="1012" y="220" font-family="'Segoe UI',Arial,sans-serif" font-size="13" fill="#e2d9f3"><tspan fill="#f0d78c">✦</tspan><tspan dx="5">Web (generic)</tspan></text>
+
+  <!-- Engagement capture -->
+  <text x="616" y="255" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#a78bfa" letter-spacing="1.5">ENGAGEMENT CAPTURE</text>
+  <rect x="616" y="264" width="86" height="22" rx="11" fill="#1a0030" stroke="#7c3aed" stroke-width="1"/>
+  <text x="659" y="279" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">▶ views</text>
+  <rect x="710" y="264" width="80" height="22" rx="11" fill="#1a0030" stroke="#7c3aed" stroke-width="1"/>
+  <text x="750" y="279" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">♥ likes</text>
+  <rect x="798" y="264" width="80" height="22" rx="11" fill="#1a0030" stroke="#7c3aed" stroke-width="1"/>
+  <text x="838" y="279" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">★ stars</text>
+  <rect x="886" y="264" width="96" height="22" rx="11" fill="#1a0030" stroke="#7c3aed" stroke-width="1"/>
+  <text x="934" y="279" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">⑂ reposts</text>
+  <rect x="990" y="264" width="106" height="22" rx="11" fill="#1a0030" stroke="#7c3aed" stroke-width="1"/>
+  <text x="1043" y="279" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">+ comments</text>
+
+  <!-- ── FEATURE CARDS ── -->
+  <line x1="48" y1="308" x2="1152" y2="308" stroke="#3b0764" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- Card 1: Platforms -->
+  <rect x="48" y="318" width="265" height="52" rx="7" fill="#0a0018" stroke="#3b0764" stroke-width="1"/>
+  <text x="64" y="337" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#6d28d9">Supported Platforms</text>
+  <text x="64" y="358" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#fff" font-weight="600">10+ Platforms</text>
+
+  <!-- Card 2: Fallback -->
+  <rect x="323" y="318" width="265" height="52" rx="7" fill="#0a0018" stroke="#3b0764" stroke-width="1"/>
+  <text x="339" y="337" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#6d28d9">Extraction Strategy</text>
+  <text x="339" y="358" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#fff" font-weight="600">4-Tier Fallback</text>
+
+  <!-- Card 3: Security -->
+  <rect x="598" y="318" width="265" height="52" rx="7" fill="#0a0018" stroke="#3b0764" stroke-width="1"/>
+  <text x="614" y="337" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#6d28d9">Security</text>
+  <text x="614" y="358" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#fff" font-weight="600">SSRF + PI Guard</text>
+
+  <!-- Card 4: MCP -->
+  <rect x="873" y="318" width="279" height="52" rx="7" fill="#0a0018" stroke="#3b0764" stroke-width="1"/>
+  <text x="889" y="337" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#6d28d9">AI Integration</text>
+  <text x="889" y="358" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#fff" font-weight="600">MCP Server</text>
+
+  <!-- ── BOTTOM BAR ── -->
+  <rect x="0" y="388" width="1200" height="92" fill="#04000c"/>
+  <line x1="0" y1="388" x2="1200" y2="388" stroke="#3b0764" stroke-width="1" stroke-opacity="0.6"/>
+
+  <text x="48" y="420" font-family="Consolas,'SF Mono',monospace" font-size="13" fill="#6d28d9">$</text>
+  <text x="66" y="420" font-family="Consolas,'SF Mono',monospace" font-size="13" fill="#c4b5fd"> git clone https://github.com/kamisimokagura/lucifer-research &amp;&amp; npm ci &amp;&amp; npm run build</text>
+  <text x="48" y="445" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#3b0764"># then add to MCP config — works with Claude Code · Cursor · Windsurf</text>
+
+  <text x="1152" y="415" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#6d28d9" text-anchor="end">v0.1.0</text>
+  <text x="1152" y="433" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#3b0764" text-anchor="end">MIT License</text>
+  <text x="1152" y="451" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#3b0764" text-anchor="end">TypeScript ESM</text>
+
+  <!-- Decorative small morning star bottom-right -->
+  <g transform="translate(1172, 462)" opacity="0.18">
+    <path d="M 0,-20 L 2.42,-2.42 L 12.6,0 L 2.42,2.42 L 0,20 L -2.42,2.42 L -12.6,0 L -2.42,-2.42 Z" fill="url(#gold)"/>
+  </g>
+</svg>
