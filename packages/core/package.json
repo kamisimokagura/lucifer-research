@@ -19,8 +19,7 @@
     "build": "tsc",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src --ext .ts",
-    "dev": "tsc --watch",
-    "prepare": "tsc"
+    "dev": "tsc --watch"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
