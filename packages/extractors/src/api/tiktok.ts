@@ -88,7 +88,14 @@ export class TikTokExtractor implements Extractor {
       const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
       const res = await fetch(oembedUrl, {
         signal: controller.signal,
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          // TikTok's oEmbed endpoint occasionally rejects requests without a
+          // browser-like User-Agent or missing Referer, returning 403/404.
+          "User-Agent":
+            "Mozilla/5.0 (compatible; lucifer-research/0.1; +https://github.com/kamisimokagura/lucifer-research)",
+          Referer: "https://www.tiktok.com/",
+        },
       });
 
       if (!res.ok) throw new Error(`TikTok oEmbed returned HTTP ${res.status} for: ${url}`);

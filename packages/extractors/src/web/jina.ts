@@ -46,21 +46,29 @@ interface Extractor {
 
 const JINA_PREFIX = "https://r.jina.ai/";
 
-// Platforms that have dedicated API extractors — skip Jina for these.
+// Platforms that have dedicated API extractors AND where Jina provides no meaningful fallback.
 // NOTE: github.com is intentionally excluded here so that GitHub sub-pages
 // (issues, PRs, commits, etc.) that GitHubExtractor throws on can fall back to Jina.
+// NOTE: bsky.app is intentionally excluded — Bluesky posts are publicly accessible without
+// login, so Jina can serve as a useful fallback when the AT Protocol API is unavailable.
 const API_NATIVE_HOSTNAMES = new Set([
+  // YouTube: video content isn't meaningful without the player; no useful Jina fallback
   "youtube.com",
   "www.youtube.com",
   "m.youtube.com",
   "youtu.be",
-  "bsky.app",
-  "staging.bsky.app",
+  // Qiita, HN, X: dedicated API extractors provide structured data Jina cannot match;
+  // also X.com requires login for content access now
   "qiita.com",
   "news.ycombinator.com",
   "hn.algolia.com",
   "x.com",
   "twitter.com",
+  "mobile.x.com",
+  "mobile.twitter.com",
+  // staging.bsky.app: kept excluded to avoid proxying staging traffic to a third-party service.
+  // Only the public bsky.app is allowed to fall back to Jina.
+  "staging.bsky.app",
 ]);
 
 const PLATFORM_MAP: Record<string, ResearchResult["platform"]> = {
@@ -69,6 +77,14 @@ const PLATFORM_MAP: Record<string, ResearchResult["platform"]> = {
   "note.com": "note",
   "reddit.com": "reddit",
   "www.reddit.com": "reddit",
+  // Bluesky public posts are accessible without login; Jina can serve as a fallback
+  // when the AT Protocol API is unavailable. Staging is excluded (see API_NATIVE_HOSTNAMES).
+  "bsky.app": "bluesky",
+};
+
+/** Platform → content type override for platforms where Jina's "article" default is wrong. */
+const TYPE_MAP: Partial<Record<ResearchResult["platform"], ResearchResult["type"]>> = {
+  bluesky: "social",
 };
 
 function detectPlatform(hostname: string): ResearchResult["platform"] {
@@ -116,12 +132,13 @@ export class JinaExtractor implements Extractor {
 
       const hostname = new URL(url).hostname.replace("www.", "");
       const platform = detectPlatform(hostname);
+      const type = TYPE_MAP[platform] ?? "article";
 
       return {
         url,
         title,
         content: markdown,
-        type: "article",
+        type,
         platform,
         trust: { score: 0.7, verified: false },
         extractor: "jina",
