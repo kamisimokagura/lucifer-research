@@ -25,8 +25,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@lucifer/core": "*",
-    "@lucifer/extractors": "*",
+    "@lucifer/core": "file:../core",
+    "@lucifer/extractors": "file:../extractors",
     "@modelcontextprotocol/sdk": "^1.10.0"
   },
   "devDependencies": {
