@@ -1,6 +1,6 @@
 {
   "name": "@lucifer/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "lucifer-research core types, router, security and pipeline",
   "type": "module",
   "main": "dist/index.js",

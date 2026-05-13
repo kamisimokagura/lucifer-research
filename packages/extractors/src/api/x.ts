@@ -70,6 +70,16 @@ interface XOEmbedResponse {
   html?: string;
 }
 
+/** Twitter Syndication API response shape */
+interface SyndicationResponse {
+  text?: string;
+  full_text?: string;
+  user?: { name?: string; screen_name?: string };
+  favorite_count?: number;
+  retweet_count?: number;
+  reply_count?: number;
+}
+
 // --- Helpers ---
 
 /** Extract numeric tweet ID from twitter.com / x.com status URLs. */
@@ -134,30 +144,43 @@ export class XExtractor implements Extractor {
     const tweetId = parseTweetId(url);
     if (!tweetId) throw new Error(`Cannot parse tweet ID from: ${url}`);
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
+    // Each tier gets its own AbortController so a timeout on one tier
+    // does not immediately abort subsequent fallback tiers.
+    // TIER_TIMEOUT is the per-tier budget; the outer Date.now() check
+    // enforces the overall hard cap across all tiers.
+    const TIER_TIMEOUT = Math.min(5_000, timeout);
+    const startTime = Date.now();
 
-    try {
-      // Tier 1: FxTwitter API — full data, no auth
-      const fxResult = await this._tryFxTwitter(tweetId, controller.signal);
-      if (fxResult) return fxResult;
+    const makeTierSignal = () => {
+      const remaining = timeout - (Date.now() - startTime);
+      if (remaining <= 0) throw new Error(`All X extraction tiers failed for ${url} (tweet ID: ${tweetId})`);
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), Math.min(TIER_TIMEOUT, remaining));
+      return ctrl.signal;
+    };
 
-      // Tier 2: Twitter oEmbed — author + text only, no engagement data
-      const oembedResult = await this._tryOEmbed(url, controller.signal);
-      if (oembedResult) return oembedResult;
+    const fxResult = await this._tryFxTwitter(tweetId, makeTierSignal());
+    if (fxResult) return fxResult;
 
-      throw new Error(`All X extraction tiers failed for ${url} (tweet ID: ${tweetId})`);
-    } finally {
-      clearTimeout(timer);
-    }
+    const vxResult = await this._tryVxTwitter(tweetId, makeTierSignal());
+    if (vxResult) return vxResult;
+
+    const synResult = await this._trySyndication(tweetId, makeTierSignal());
+    if (synResult) return synResult;
+
+    const oembedResult = await this._tryOEmbed(url, makeTierSignal());
+    if (oembedResult) return oembedResult;
+
+    throw new Error(`All X extraction tiers failed for ${url} (tweet ID: ${tweetId})`);
   }
 
-  private async _tryFxTwitter(
+  private async _tryFxCompatible(
+    apiUrl: string,
     tweetId: string,
     signal: AbortSignal,
   ): Promise<ResearchResult | null> {
     try {
-      const res = await fetch(`https://api.fxtwitter.com/i/status/${tweetId}`, {
+      const res = await fetch(`${apiUrl}${tweetId}`, {
         signal,
         headers: { Accept: "application/json" },
       });
@@ -204,6 +227,65 @@ export class XExtractor implements Extractor {
     }
   }
 
+  private async _tryFxTwitter(tweetId: string, signal: AbortSignal): Promise<ResearchResult | null> {
+    return this._tryFxCompatible("https://api.fxtwitter.com/i/status/", tweetId, signal);
+  }
+
+  private async _tryVxTwitter(tweetId: string, signal: AbortSignal): Promise<ResearchResult | null> {
+    return this._tryFxCompatible("https://api.vxtwitter.com/i/status/", tweetId, signal);
+  }
+
+  private _syndicationToken(tweetId: string): string {
+    return ((Math.floor(Number(tweetId) / 1e15) * Math.PI) >>> 0).toString(36);
+  }
+
+  private async _trySyndication(
+    tweetId: string,
+    signal: AbortSignal,
+  ): Promise<ResearchResult | null> {
+    try {
+      const token = this._syndicationToken(tweetId);
+      const url = `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=${token}&lang=en`;
+      const res = await fetch(url, {
+        signal,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Mozilla/5.0 (compatible; lucifer-research/0.1.0)",
+        },
+      });
+      if (!res.ok) return null;
+
+      const data = (await res.json()) as SyndicationResponse;
+      const text = data.full_text ?? data.text ?? "";
+      if (!text) return null;
+
+      const handle = data.user?.screen_name ?? "unknown";
+      const displayName = data.user?.name;
+      const truncated = text.length > 60 ? `${text.slice(0, 60)}...` : text;
+
+      const engagement = {
+        ...(data.favorite_count !== undefined && { likes: data.favorite_count }),
+        ...(data.retweet_count !== undefined && { reposts: data.retweet_count }),
+        ...(data.reply_count !== undefined && { comments: data.reply_count }),
+      };
+
+      return {
+        url: `https://x.com/${handle}/status/${tweetId}`,
+        title: `@${handle}: ${truncated}`,
+        content: text,
+        type: "social",
+        platform: "x",
+        ...(displayName !== undefined && { author: displayName }),
+        engagement,
+        trust: { score: 0.75, verified: false },
+        extractor: "api",
+        extractedAt: new Date().toISOString(),
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private async _tryOEmbed(url: string, signal: AbortSignal): Promise<ResearchResult | null> {
     try {
       const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=1`;
@@ -233,7 +315,7 @@ export class XExtractor implements Extractor {
         platform: "x",
         ...(displayName !== undefined && { author: displayName }),
         trust: { score: 0.6, verified: false },
-        extractor: "readability",
+        extractor: "api",
         extractedAt: new Date().toISOString(),
       };
     } catch {

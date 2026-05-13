@@ -2,7 +2,7 @@ export type TrustLevel = "verified" | "unverified" | "conflicted";
 
 export type ContentType = "article" | "social" | "github" | "video" | "feed" | "other";
 
-export type ExtractorTier = "api" | "rss" | "jina" | "readability" | "browser" | "experimental";
+export type ExtractorTier = "api" | "rss" | "jina" | "readability" | "browser" | "experimental" | "hybrid";
 
 export type Platform =
   | "github"

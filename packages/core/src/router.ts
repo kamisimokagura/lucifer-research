@@ -4,6 +4,12 @@ interface RouteInfo {
   tier: ExtractorTier;
   platform: Platform;
   extractorKey: string;
+  /**
+   * When true, BrowserExtractor runs in parallel with the primary extractor.
+   * Results are merged: primary metadata (engagement/author/date) + richer content.
+   * Used for SNS platforms where both API data and full page content are valuable.
+   */
+  hybrid?: boolean;
 }
 
 /** Map of domain → route info */
@@ -32,28 +38,38 @@ const DOMAIN_ROUTES: Record<string, RouteInfo> = {
   // substack.com base site; *.substack.com subdomains handled by suffix check below
   "substack.com": { tier: "rss", platform: "web", extractorKey: "rss" },
 
-  // --- Social platforms ---
-  "twitter.com": { tier: "api", platform: "x", extractorKey: "x" },
-  "x.com": { tier: "api", platform: "x", extractorKey: "x" },
-  "mobile.twitter.com": { tier: "api", platform: "x", extractorKey: "x" },
-  "mobile.x.com": { tier: "api", platform: "x", extractorKey: "x" },
+  // --- Social platforms (hybrid: true → BrowserExtractor runs in parallel for richer content) ---
+  "twitter.com": { tier: "api", platform: "x", extractorKey: "x", hybrid: true },
+  "x.com": { tier: "api", platform: "x", extractorKey: "x", hybrid: true },
+  "mobile.twitter.com": { tier: "api", platform: "x", extractorKey: "x", hybrid: true },
+  "mobile.x.com": { tier: "api", platform: "x", extractorKey: "x", hybrid: true },
 
-  "tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
-  "vm.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
-  "vt.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
-  "m.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok" },
+  "tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok", hybrid: true },
+  "vm.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok", hybrid: true },
+  "vt.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok", hybrid: true },
+  "m.tiktok.com": { tier: "api", platform: "tiktok", extractorKey: "tiktok", hybrid: true },
 
   // Instagram uses an unofficial GraphQL endpoint + OGP fallback (no cookie required).
   // See InstagramExtractor for doc_id rotation strategy.
   // Note: selectRoute() strips www. but not m., so mobile subdomains are listed explicitly.
   // instagr.am is Instagram's URL shortener — same extractor handles it via canHandle().
-  "instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
-  "m.instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
-  "instagr.am": { tier: "experimental", platform: "instagram", extractorKey: "instagram" },
+  "instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram", hybrid: true },
+  "m.instagram.com": { tier: "experimental", platform: "instagram", extractorKey: "instagram", hybrid: true },
+  "instagr.am": { tier: "experimental", platform: "instagram", extractorKey: "instagram", hybrid: true },
 };
 
-/** Domains known to require JS rendering (T5 browser) */
-const JS_HEAVY_DOMAINS = new Set(["linkedin.com", "www.linkedin.com"]);
+/** Domains known to require JS rendering — BrowserExtractor runs first for these */
+const JS_HEAVY_DOMAINS = new Set([
+  // Professional networks
+  "linkedin.com", "www.linkedin.com",
+  // Social media
+  // Note: instagram.com has a DOMAIN_ROUTES entry (extractorKey: "instagram") that takes
+  // precedence, so these are only reached if InstagramExtractor is not registered.
+  "instagram.com", "m.instagram.com", "instagr.am",
+  "facebook.com", "www.facebook.com", "m.facebook.com",
+  "threads.net", "www.threads.net",
+  "reddit.com", "www.reddit.com", "old.reddit.com",
+]);
 
 /**
  * Determine the best extractor route for a URL.

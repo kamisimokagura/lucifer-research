@@ -10,6 +10,7 @@ export { JinaExtractor } from "./web/jina.js";
 export { RssExtractor } from "./feed/rss.js";
 export { ReadabilityExtractor } from "./web/readability.js";
 export { InstagramExtractor } from "./web/instagram.js";
+export { BrowserExtractor } from "./web/browser.js";
 
 // Local type definitions mirroring @lucifer/core (workspace package not yet built)
 export type ExtractorTier = "api" | "rss" | "jina" | "readability" | "browser" | "experimental";
@@ -68,6 +69,7 @@ import { JinaExtractor } from "./web/jina.js";
 import { RssExtractor } from "./feed/rss.js";
 import { ReadabilityExtractor } from "./web/readability.js";
 import { InstagramExtractor } from "./web/instagram.js";
+import { BrowserExtractor } from "./web/browser.js";
 
 /**
  * Create and return the default extractor registry ordered by tier priority.
@@ -80,17 +82,23 @@ export function createDefaultRegistry(config?: {
   githubToken?: string;
   jinaApiKey?: string;
   qiitaToken?: string;
+  /** YouTube Data API v3 key. Unlocks view/like/comment counts + verified trust. */
+  youtubeApiKey?: string;
   /** Override Instagram GraphQL doc_id when Meta rotates it (every 2–4 weeks). */
   instagramDocId?: string;
   /** Meta Graph API access token for optional Instagram oEmbed tier. */
   instagramMetaToken?: string;
+  /** Chrome User Data Dir for BrowserExtractor. Reads CHROME_USER_DATA_DIR env if not set. */
+  chromeUserDataDir?: string;
+  /** Session storage dir for BrowserExtractor (default: ~/.lucifer/sessions). */
+  browserSessionDir?: string;
 }): Map<string, Extractor> {
   const registry = new Map<string, Extractor>();
   // API-tier first (most authoritative, structured data)
   registry.set("github", new GitHubExtractor(config?.githubToken));
   registry.set("hackernews", new HackerNewsExtractor());
   registry.set("bluesky", new BlueskyExtractor());
-  registry.set("youtube", new YouTubeExtractor());
+  registry.set("youtube", new YouTubeExtractor(config?.youtubeApiKey));
   registry.set("qiita", new QiitaExtractor(config?.qiitaToken));
   registry.set("x", new XExtractor());
   registry.set("tiktok", new TikTokExtractor());
@@ -108,6 +116,15 @@ export function createDefaultRegistry(config?: {
   // Web-tier (Jina reader service, then local Readability fallback)
   registry.set("jina", new JinaExtractor(config?.jinaApiKey));
   registry.set("readability", new ReadabilityExtractor());
+  // Browser-tier: final fallback — only used when Jina + Readability both fail.
+  // Disabled automatically when CHROME_USER_DATA_DIR is not set.
+  registry.set(
+    "browser",
+    new BrowserExtractor({
+      ...(config?.chromeUserDataDir !== undefined && { userDataDir: config.chromeUserDataDir }),
+      ...(config?.browserSessionDir !== undefined && { sessionDir: config.browserSessionDir }),
+    }),
+  );
   return registry;
 }
 

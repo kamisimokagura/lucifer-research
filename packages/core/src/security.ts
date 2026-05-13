@@ -12,12 +12,14 @@ const PRIVATE_IP_PATTERNS = [
   /^172\.(1[6-9]|2\d|3[01])\./,
   /^192\.168\./,
   /^169\.254\./, // IPv4 link-local (AWS/Azure metadata)
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // RFC 6598 CGNAT / Alibaba Cloud metadata (100.64.0.0/10)
   /^::1$/,
   /^::ffff:127\./i, // IPv4-mapped loopback
   /^::ffff:10\./i, // IPv4-mapped RFC1918 10.x
   /^::ffff:172\.(1[6-9]|2\d|3[01])\./i, // IPv4-mapped RFC1918 172.16-31
   /^::ffff:192\.168\./i, // IPv4-mapped RFC1918 192.168
   /^::ffff:169\.254\./i, // IPv4-mapped link-local/metadata
+  /^::ffff:100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./i, // IPv4-mapped CGNAT (100.64.0.0/10)
   /^f[cd][0-9a-f]{2}:/i, // IPv6 ULA (fc00::/7 covers both fc and fd prefixes per RFC 4193)
   /^fe[89ab][0-9a-f]:/i, // IPv6 link-local
 ];
@@ -31,6 +33,7 @@ const REBINDING_IP_PATTERNS = [
   /\b172\.(1[6-9]|2\d|3[01])\.\d+\.\d+\b/,
   /\b192\.168\.\d+\.\d+\b/,
   /\b169\.254\.\d+\.\d+\b/,
+  /\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+\b/, // CGNAT embedded in hostname
 ];
 
 // Block well-known DNS rebinding services regardless of subdomain
@@ -292,7 +295,11 @@ export function enforceContentSize(content: string): string {
  * Therefore we normalize a copy for detection but never mutate the returned content.
  */
 function normalizeForMatching(text: string): string {
-  // ZWSP, ZWNJ, ZWJ, BOM, SHY, WJ, MONGOLIAN VOWEL SEPARATOR
+  // ZWSP, ZWNJ, ZWJ, BOM, SHY, WJ, MONGOLIAN VOWEL SEPARATOR.
+  // Intentional: we WANT to strip ZWJ (U+200D) and ZWNJ (U+200C) here — any
+  // resulting surrogate-pair misjoin is harmless because we only use the output
+  // for pattern matching, not display.
+  // eslint-disable-next-line no-misleading-character-class
   return text.replace(/[\u200B\u200C\u200D\uFEFF\u00AD\u2060\u180E]/g, "");
 }
 

@@ -75,7 +75,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "lucifer_extract") {
     const url = String(a["url"] ?? "");
-    const timeout = typeof a["timeout"] === "number" ? a["timeout"] : 15_000;
+    const rawTimeout = typeof a["timeout"] === "number" ? a["timeout"] : 15_000;
+    const timeout = Number.isFinite(rawTimeout) ? Math.max(1_000, Math.min(120_000, rawTimeout)) : 15_000;
     const fallback = a["fallback"] !== false;
 
     try {
@@ -114,7 +115,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === "lucifer_pipeline") {
     const raw = a["urls"];
     const urls = Array.isArray(raw) ? raw.map(String) : [];
-    const timeout = typeof a["timeout"] === "number" ? a["timeout"] : 15_000;
+    const rawTimeout = typeof a["timeout"] === "number" ? a["timeout"] : 15_000;
+    const timeout = Number.isFinite(rawTimeout) ? Math.max(1_000, Math.min(120_000, rawTimeout)) : 15_000;
 
     if (urls.length === 0) {
       return {
