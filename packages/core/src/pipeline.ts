@@ -93,11 +93,12 @@ export class ResearchPipeline {
     if (primary && browser) {
       const browserWins = browser.content.length > primary.content.length;
       const content = browserWins ? browser.content : primary.content;
-      // When browser content wins, mark trust as conflicted so downstream
-      // consumers know the body is browser-scraped despite API metadata.
+      // When browser content wins, cap trust score and mark as conflicted so downstream
+      // consumers know the body is browser-scraped despite API metadata. Capping at 0.6
+      // prevents API-derived scores from over-representing scraped content reliability.
       const trust = browserWins
         ? {
-            ...primary.trust,
+            score: Math.min(primary.trust.score, browser.trust.score, 0.6),
             verified: false,
             conflicts: [...(primary.trust.conflicts ?? []), "metadata-primary:content-browser"],
           }

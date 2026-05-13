@@ -14,12 +14,19 @@ const PRIVATE_IP_PATTERNS = [
   /^169\.254\./, // IPv4 link-local (AWS/Azure metadata)
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // RFC 6598 CGNAT / Alibaba Cloud metadata (100.64.0.0/10)
   /^::1$/,
-  /^::ffff:127\./i, // IPv4-mapped loopback
-  /^::ffff:10\./i, // IPv4-mapped RFC1918 10.x
-  /^::ffff:172\.(1[6-9]|2\d|3[01])\./i, // IPv4-mapped RFC1918 172.16-31
-  /^::ffff:192\.168\./i, // IPv4-mapped RFC1918 192.168
-  /^::ffff:169\.254\./i, // IPv4-mapped link-local/metadata
-  /^::ffff:100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./i, // IPv4-mapped CGNAT (100.64.0.0/10)
+  /^::ffff:127\./i, // IPv4-mapped loopback (dotted)
+  /^::ffff:10\./i, // IPv4-mapped RFC1918 10.x (dotted)
+  /^::ffff:172\.(1[6-9]|2\d|3[01])\./i, // IPv4-mapped RFC1918 172.16-31 (dotted)
+  /^::ffff:192\.168\./i, // IPv4-mapped RFC1918 192.168 (dotted)
+  /^::ffff:169\.254\./i, // IPv4-mapped link-local/metadata (dotted)
+  /^::ffff:100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./i, // IPv4-mapped CGNAT (dotted)
+  // IPv4-mapped IPv6 in compressed hex form (e.g. ::ffff:7f00:1 = ::ffff:127.0.0.1)
+  /^::ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}$/i, // ::ffff:7fxx:xxxx — 127.x.x.x loopback hex
+  /^::ffff:0a[0-9a-f]{2}:[0-9a-f]{1,4}$/i, // ::ffff:0axx:xxxx — 10.x.x.x hex
+  /^::ffff:ac1[0-9a-f]:[0-9a-f]{1,4}$/i, // ::ffff:ac10-ac1f:xxxx — 172.16-31.x.x hex
+  /^::ffff:c0a8:[0-9a-f]{1,4}$/i, // ::ffff:c0a8:xxxx — 192.168.x.x hex
+  /^::ffff:a9fe:[0-9a-f]{1,4}$/i, // ::ffff:a9fe:xxxx — 169.254.x.x link-local hex
+  /^::ffff:64[4-7][0-9a-f]:[0-9a-f]{1,4}$/i, // ::ffff:6440-647f:xxxx — 100.64.0.0/10 CGNAT hex
   /^f[cd][0-9a-f]{2}:/i, // IPv6 ULA (fc00::/7 covers both fc and fd prefixes per RFC 4193)
   /^fe[89ab][0-9a-f]:/i, // IPv6 link-local
 ];

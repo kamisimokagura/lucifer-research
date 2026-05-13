@@ -72,12 +72,19 @@ const PRIVATE_IP_RE = [
   /^169\.254\./, // IPv4 link-local (AWS/Azure metadata)
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // RFC 6598 CGNAT / Alibaba Cloud metadata (100.64.0.0/10)
   /^::1$/, // IPv6 loopback
-  /^::ffff:127\./i, // IPv4-mapped loopback
-  /^::ffff:10\./i, // IPv4-mapped RFC1918 10.x
-  /^::ffff:172\.(1[6-9]|2\d|3[01])\./i, // IPv4-mapped RFC1918 172.16-31
-  /^::ffff:192\.168\./i, // IPv4-mapped RFC1918 192.168
-  /^::ffff:169\.254\./i, // IPv4-mapped link-local/metadata
-  /^::ffff:100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./i, // IPv4-mapped CGNAT (100.64.0.0/10)
+  /^::ffff:127\./i, // IPv4-mapped loopback (dotted)
+  /^::ffff:10\./i, // IPv4-mapped RFC1918 10.x (dotted)
+  /^::ffff:172\.(1[6-9]|2\d|3[01])\./i, // IPv4-mapped RFC1918 172.16-31 (dotted)
+  /^::ffff:192\.168\./i, // IPv4-mapped RFC1918 192.168 (dotted)
+  /^::ffff:169\.254\./i, // IPv4-mapped link-local/metadata (dotted)
+  /^::ffff:100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./i, // IPv4-mapped CGNAT (dotted)
+  // IPv4-mapped IPv6 in compressed hex form (e.g. ::ffff:7f00:1 = ::ffff:127.0.0.1)
+  /^::ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}$/i, // 127.x.x.x loopback hex
+  /^::ffff:0a[0-9a-f]{2}:[0-9a-f]{1,4}$/i, // 10.x.x.x hex
+  /^::ffff:ac1[0-9a-f]:[0-9a-f]{1,4}$/i, // 172.16-31.x.x hex
+  /^::ffff:c0a8:[0-9a-f]{1,4}$/i, // 192.168.x.x hex
+  /^::ffff:a9fe:[0-9a-f]{1,4}$/i, // 169.254.x.x link-local hex
+  /^::ffff:64[4-7][0-9a-f]:[0-9a-f]{1,4}$/i, // 100.64.0.0/10 CGNAT hex
   /^f[cd][0-9a-f]{2}:/i, // IPv6 ULA (fc00::/7)
   /^fe[89ab][0-9a-f]:/i, // IPv6 link-local
 ];
@@ -346,7 +353,7 @@ export class BrowserExtractor implements Extractor {
           process.stderr.write(`[BrowserExtractor] Strategy 0: CDP connect (loopback confirmed)\n`);
           const browser = await chromium.connectOverCDP(cdpUrl, { timeout: 5_000 });
           const existingContexts = browser.contexts();
-          const context = existingContexts[0] ?? await browser.newContext();
+          const context = existingContexts[0] ?? await browser.newContext({ serviceWorkers: "block" });
           process.stderr.write(`[BrowserExtractor] Strategy 0: connected (${existingContexts.length} context(s))\n`);
           // close() on a CDP-connected browser only disconnects; it does NOT kill Chrome
           return { context, close: async () => { await browser.close().catch(() => {}); }, strategy: 0 };
@@ -362,7 +369,7 @@ export class BrowserExtractor implements Extractor {
       process.stderr.write(`[BrowserExtractor] Strategy 1: loading session file for ${new URL(url).hostname}\n`);
       const browser = await chromium.launch({ headless });
       try {
-        const context = await browser.newContext({ storageState });
+        const context = await browser.newContext({ storageState, serviceWorkers: "block" });
         return { context, close: async () => { await browser.close().catch(() => {}); }, strategy: 1 };
       } catch {
         // Corrupt/incompatible session file — discard and fall through to Strategy 2/3
@@ -379,8 +386,8 @@ export class BrowserExtractor implements Extractor {
         // cookies are accessible. Chrome does not support headless reliably in
         // launchPersistentContext, so fall back to Playwright's Chromium in headless mode.
         const launchOpts = headless
-          ? { headless: true as const }
-          : { headless: false as const, channel: "chrome" as const };
+          ? { headless: true as const, serviceWorkers: "block" as const }
+          : { headless: false as const, channel: "chrome" as const, serviceWorkers: "block" as const };
         const context = await chromium.launchPersistentContext(this.userDataDir, launchOpts);
         process.stderr.write(`[BrowserExtractor] Strategy 2: Chrome profile opened successfully (${headless ? "chromium/headless" : "chrome/headed"})\n`);
         return { context, close: async () => { await context.close().catch(() => {}); }, strategy: 2 };
@@ -406,7 +413,7 @@ export class BrowserExtractor implements Extractor {
     // Strategy 3: isolated empty context (no cookies)
     process.stderr.write(`[BrowserExtractor] Strategy 3: isolated context (no credentials)\n`);
     const browser = await chromium.launch({ headless });
-    const context = await browser.newContext();
+    const context = await browser.newContext({ serviceWorkers: "block" });
     return { context, close: async () => { await browser.close().catch(() => {}); }, strategy: 3 };
   }
 
