@@ -46,10 +46,19 @@ interface ContextBundle {
   strategy: 0 | 1 | 2 | 3;
 }
 
-// X/Twitter: login wall detected via isLoginWallTitle() / isLoginWallUrl().
-// Strategy 2 (Chrome profile) succeeds when the user is logged in to X in Chrome.
-// Without credentials, the title check catches "Sign Up | X" and falls back to the API extractor.
-const EXCLUDED_HOSTNAMES = new Set<string>();
+// X/Twitter (x.com / twitter.com) is always excluded — the login wall is structurally
+// unbypassable without credentials. t.co is a redirect shortener that leads to login-walled pages.
+// The X API extractor handles these URLs instead.
+const EXCLUDED_HOSTNAME_SUFFIXES = ["x.com", "twitter.com"] as const;
+const EXCLUDED_HOSTNAMES_EXACT = new Set<string>(["t.co"]);
+
+function isExcludedHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, "");
+  return (
+    EXCLUDED_HOSTNAMES_EXACT.has(host) ||
+    EXCLUDED_HOSTNAME_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))
+  );
+}
 
 // URL patterns that indicate a login wall redirect
 const LOGIN_URL_PATTERNS = [
@@ -197,7 +206,7 @@ export class BrowserExtractor implements Extractor {
   canHandle(url: string): boolean {
     try {
       const { hostname, protocol } = new URL(url);
-      if (protocol !== "https:" || EXCLUDED_HOSTNAMES.has(hostname)) return false;
+      if (protocol !== "https:" || isExcludedHostname(hostname)) return false;
       // Allow if Chrome profile is configured (Strategy 2) or a saved session exists (Strategy 1).
       // Strategy 3 (isolated context) is not used without at least one of these — it would
       // launch headless Chromium for every URL with no cookies, degrading performance for no gain.
